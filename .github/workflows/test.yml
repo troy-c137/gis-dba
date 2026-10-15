@@ -1,0 +1,28 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_PASSWORD: ci-admin-password-for-testing
+          POSTGRES_DB: gis_lab
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d gis_lab"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.lock && pip install --no-deps -e .
+      - run: gis-admin env
+      - run: gis-admin migrate && gis-admin roles && gis-admin seed
+        env:
+          ADMIN_DATABASE_URL: postgresql://postgres:ci-admin-password-for-testing@127.0.0.1:55432/gis_lab
+      - run: ruff check . && RUN_DB_TESTS=1 pytest
+        env:
+          ADMIN_DATABASE_URL: postgresql://postgres:ci-admin-password-for-testing@127.0.0.1:55432/gis_lab

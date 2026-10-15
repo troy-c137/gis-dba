@@ -1,0 +1,7 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {"name": "GIS API", "type": "debugpy", "request": "launch", "module": "uvicorn", "args": ["gis_dba.api:app", "--reload", "--host", "127.0.0.1"], "envFile": "${workspaceFolder}/.env", "justMyCode": true},
+    {"name": "Synthetic simulator", "type": "debugpy", "request": "launch", "module": "gis_dba.simulator", "args": ["--cycles", "5"], "envFile": "${workspaceFolder}/.env"}
+  ]
+}

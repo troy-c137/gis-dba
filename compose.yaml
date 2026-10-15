@@ -1,0 +1,51 @@
+name: gis-dba
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    # This upstream tag is amd64; Docker Desktop/Colima on Apple Silicon needs emulation.
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: gis_lab
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run gis-admin env first}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    command: ["postgres", "-c", "log_min_duration_statement=250", "-c", "log_lock_waits=on", "-c", "deadlock_timeout=1s", "-c", "shared_preload_libraries=pg_stat_statements"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gis_lab"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://gis_reader:${GIS_READER_PASSWORD:?Run gis-admin env}@db:5432/gis_lab
+      INGEST_DATABASE_URL: postgresql://gis_ingest:${GIS_INGEST_PASSWORD:?Run gis-admin env}@db:5432/gis_lab
+      API_KEY: ${API_KEY:?Run gis-admin env}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  admin:
+    build: .
+    profiles: [tools]
+    environment:
+      ADMIN_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?Run gis-admin env}@db:5432/gis_lab
+      GIS_READER_PASSWORD: ${GIS_READER_PASSWORD:?Run gis-admin env}
+      GIS_INGEST_PASSWORD: ${GIS_INGEST_PASSWORD:?Run gis-admin env}
+      GIS_MONITOR_PASSWORD: ${GIS_MONITOR_PASSWORD:?Run gis-admin env}
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["gis-admin"]
+volumes:
+  pgdata:

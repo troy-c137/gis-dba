@@ -7,3 +7,10 @@ __pycache__/
 *.sql.gz
 backups/
 .DS_Store
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+artifacts/
+.pgdata/
+*.dump
+.coverage

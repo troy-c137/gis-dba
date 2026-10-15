@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Support both Docker Desktop's Compose plugin and Homebrew's standalone Compose.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+if docker compose version >/dev/null 2>&1; then
+  exec docker compose "$@"
+fi
+if command -v docker-compose >/dev/null 2>&1; then
+  exec docker-compose "$@"
+fi
+printf 'Compose is missing. Install Docker Desktop or docker-compose.\n' >&2
+exit 1

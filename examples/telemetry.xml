@@ -1,0 +1,10 @@
+<telemetry>
+  <message_id>cba639c0-5097-43c8-bdef-f7401e4e0801</message_id>
+  <equipment_id>SIM-ASSET-001</equipment_id>
+  <observed_at>2026-01-01T12:00:00Z</observed_at>
+  <longitude>-140.05</longitude>
+  <latitude>-40.05</latitude>
+  <status>online</status>
+  <battery_pct>87</battery_pct>
+  <source>synthetic-xml-example</source>
+</telemetry>
