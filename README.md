@@ -6,6 +6,8 @@ Python 3.11+ · FastAPI · psycopg 3 · PostgreSQL 17 · PostGIS · Docker Compo
 
 ## Start here
 
+For a guided learning path, use the [step-by-step DBA practice workbook](docs/learning-guide.md). It walks through the existing build with commands, expected results, failure drills, and evidence to save.
+
 [Local/Docker setup and VS Code workflow](docs/setup.md) covers native macOS, Ubuntu, and Docker. Native PostgreSQL uses **5432**; Docker uses **55432**, so both databases can coexist. One set of migrations serves both. The [validation record](docs/validation.md) lists actual tests, recovery results, and measured timings. See [architecture](docs/architecture.md), [six DBA exercises](docs/dba-labs.md), and [QGIS / ArcGIS guidance](docs/gis.md).
 
 Once Python dependencies are installed and a Docker engine with Compose is running:
