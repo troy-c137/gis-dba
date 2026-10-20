@@ -1,17 +1,53 @@
+# Credentials and local configuration
 .env
 .env.*
 !.env.example
-__pycache__/
+*.pem
+*.key
+*.p12
+*.pfx
+.pgpass
+.pg_service.conf
+.aws/
+
+# Python environments, caches, and build output
 .venv/
-*.log
-*.sql.gz
-/sql/practice-workbook.sql
-backups/
-.DS_Store
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
-*.egg-info/
-artifacts/
-.pgdata/
-*.dump
 .coverage
+.coverage.*
+htmlcov/
+/build/
+/dist/
+
+# Database files, backups, exports, and logs
+.pgdata/
+backups/
+artifacts/
+*.dump
+*.dump.json
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.db
+*.log
+*.qgs
+*.qgz
+
+# Personal documents, scratch work, and local learning materials
+/output/
+/tmp/
+/private/
+/docs/learning-guide.md
+/docs/dba-labs.md
+/docs/validation.md
+/sql/practice-workbook.sql
+/sql/practice/
+
+# Operating-system files
+.DS_Store
+Thumbs.db

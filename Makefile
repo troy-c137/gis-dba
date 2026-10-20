@@ -2,7 +2,7 @@ PYTHON ?= python3
 
 .PHONY: install env db init api simulate test integration health benchmark backup
 install:
-	$(PYTHON) -c 'import sys; assert sys.version_info >= (3, 11), "Use Python 3.11+: make install PYTHON=python3.14"'
+	$(PYTHON) -c 'import sys; assert sys.version_info >= (3, 11), "Use a Python 3.11+ interpreter: make install PYTHON=path/to/python"'
 	$(PYTHON) -m venv .venv
 	.venv/bin/pip install -r requirements.lock
 	.venv/bin/pip install --no-deps -e .

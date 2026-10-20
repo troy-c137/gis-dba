@@ -1,13 +1,13 @@
 # Local and Docker setup
 
-Use the repository terminal in VS Code. Python 3.11+ is required (Docker uses 3.12). Both modes run the same schema and code; native uses port **5432**, Docker **55432**. They hold independent data. The host API uses **8000**, so run one API at a time.
+Run commands from the repository root. Python 3.11+ is required (Docker uses 3.12). Both modes run the same schema and code; native uses port **5432**, Docker **55432**. They hold independent data. The host API uses **8000**, so run one API at a time.
 
 ## Python environment
 
-On this Apple Silicon Mac, Homebrew Python is available as `/opt/homebrew/bin/python3.14`; `/usr/bin/python3` is too old. On Ubuntu use `python3` after installing Python 3.11+ and its venv package.
+Use a Python 3.11+ interpreter. Verify with `python3 --version`; if necessary, substitute the executable for your installed version. On Ubuntu, install the matching venv package.
 
 ```bash
-/opt/homebrew/bin/python3.14 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.lock
 pip install --no-deps -e .
@@ -18,10 +18,10 @@ The last command creates `.env` with random credentials, refuses to replace an e
 
 ## Docker on macOS
 
-Install Docker Desktop **or** use the existing Homebrew Docker CLI with Colima:
+Install Docker Desktop **or** use the Homebrew Docker CLI with Colima:
 
 ```bash
-brew install docker-compose colima
+brew install docker docker-compose colima
 colima start --cpu 2 --memory 4 --disk 20 --vm-type vz --vz-rosetta
 ```
 
@@ -31,11 +31,11 @@ The checked-in `./scripts/compose` wrapper selects either Docker's `docker compo
 
 ```bash
 python scripts/use_database.py docker
-./scripts/compose up -d db
+./scripts/compose up -d --wait db
 gis-admin migrate
 gis-admin roles
 gis-admin seed
-./scripts/compose up -d --build api
+./scripts/compose up -d --build --wait api
 ```
 
 Alternatively, initialize without host Python DB connections using:
@@ -52,7 +52,7 @@ Migrations run explicitly, including after an existing volume is reused. They ar
 
 ```bash
 brew install postgresql@17 postgis
-export PG_BIN=/opt/homebrew/opt/postgresql@17/bin
+export PG_BIN="$(brew --prefix postgresql@17)/bin"
 export PATH="$PG_BIN:$PATH"
 python scripts/native_db.py start
 python scripts/use_database.py native

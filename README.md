@@ -1,51 +1,94 @@
-# Tactical Geospatial Asset & Telemetry Database
+# GIS DBA
 
-A hands-on **entirely synthetic** PostgreSQL 17/PostGIS DBA lab: fictional equipment, invented locations, XML ingestion, GeoJSON API, spatial queries, performance engineering, least privilege, monitoring, and verified logical recovery.
+A geospatial asset and telemetry database built with PostgreSQL 17, PostGIS, and FastAPI. It combines XML ingestion, GeoJSON endpoints, spatial queries, database administration, and verified logical backups in a reproducible local environment.
 
-Python 3.11+ · FastAPI · psycopg 3 · PostgreSQL 17 · PostGIS · Docker Compose · QGIS
+All sample assets and telemetry are synthetic. Coordinates represent a fictional grid in the South Pacific.
 
-## Start here
+## Features
 
-For a guided learning path, use the [step-by-step DBA practice workbook](docs/learning-guide.md). It walks through the existing build with commands, expected results, failure drills, and evidence to save.
+- Strict XML validation with a 16 KiB request limit and API key authentication.
+- Transactional ingestion with idempotent retries, conflict detection, and ordered current-state updates.
+- GeoJSON endpoints for current assets, proximity searches, and polygon membership.
+- Separate database roles for reads, ingestion, and monitoring.
+- Checksummed migrations, a rollback script, and an isolated migration rehearsal.
+- Snapshot-consistent backup manifests and recovery verification in a new database.
+- Synthetic telemetry generation, query benchmarks, and QGIS integration.
 
-[Local/Docker setup and VS Code workflow](docs/setup.md) covers native macOS, Ubuntu, and Docker. Native PostgreSQL uses **5432**; Docker uses **55432**, so both databases can coexist. One set of migrations serves both. The [validation record](docs/validation.md) lists actual tests, recovery results, and measured timings. See [architecture](docs/architecture.md), [six DBA exercises](docs/dba-labs.md), and [QGIS / ArcGIS guidance](docs/gis.md).
+## Quick start
 
-Once Python dependencies are installed and a Docker engine with Compose is running:
+Install Python 3.11+ and a Docker engine with Compose. From the repository root:
 
 ```bash
+python3 -m venv .venv
 source .venv/bin/activate
-gis-admin env                    # once; generates private .env credentials
-./scripts/compose up -d db
+pip install -r requirements.lock
+pip install --no-deps -e .
+
+gis-admin env
+./scripts/compose up -d --wait db
 gis-admin migrate
 gis-admin roles
 gis-admin seed
-./scripts/compose up -d --build api
+./scripts/compose up -d --build --wait api
+
 gis-simulate --cycles 5
 gis-admin health
 ```
 
-API: [interactive documentation](http://127.0.0.1:8000/docs). All data endpoints require `X-API-Key` from `.env`. [Example XML](examples/telemetry.xml) demonstrates the strict input contract. Exact retries are idempotent; out-of-order messages preserve history and keep the newest current position.
+`gis-admin env` generates random credentials in a private `.env` file and refuses to overwrite an existing file. The example configuration contains placeholders; generate credentials before starting services.
 
-## Project map
+The API listens on [localhost:8000](http://127.0.0.1:8000/docs), and Docker PostgreSQL uses `127.0.0.1:55432`. Data endpoints require the `X-API-Key` header from `.env`. See the [setup guide](docs/setup.md) for request examples, native PostgreSQL setup, and service lifecycle commands.
 
-| Path | Purpose |
+## API
+
+| Endpoint | Purpose |
 | --- | --- |
-| `sql/migrations/` | Checksummed schema, spatial indexes/views, transactional ingestion function |
-| `src/gis_dba/` | API, XML validation, simulator, admin, backup/verified recovery |
-| `scripts/` | Native cluster lifecycle, environment switch, bulk performance lab |
-| `sql/monitor.sql`, `sql/spatial_queries.sql` | Monitoring and spatial query exercises |
-| `tests/`, `.github/workflows/test.yml` | Validation, API, transactional/PostGIS integration checks |
-| `.vscode/` | Python interpreter, debugger, and extension recommendations |
+| `POST /telemetry/xml` | Validate and ingest a telemetry event |
+| `GET /assets` | Current asset positions as GeoJSON |
+| `GET /assets/nearby` | Search by longitude, latitude, and radius in meters |
+| `GET /areas` | Operational area polygons as GeoJSON |
+| `GET /areas/{area_id}/assets` | Assets covered by an area, including its boundary |
+| `GET /health/live`, `GET /health/ready` | Liveness and database readiness |
+
+The [example XML](examples/telemetry.xml) defines the input shape. Exact retries return `inserted=false`; reusing a message ID with different content returns HTTP 409. Out-of-order events remain in history while the newest observation determines current state.
+
+## Development and validation
 
 ```bash
-pytest -m 'not integration'       # no database needed
-RUN_DB_TESTS=1 pytest             # initialized, seeded development database required
-python scripts/benchmark.py --rows 1000000
-# PostgreSQL 17 client tools must be on PATH:
+ruff check .
+pytest -m 'not integration'
+
+# Requires an initialized development database with roles and seed data:
+RUN_DB_TESTS=1 pytest
+
+# Records execution plans and timings under artifacts/:
+python scripts/benchmark.py --rows 100000
+```
+
+GitHub Actions runs linting and the test suite against an isolated PostGIS service. Integration tests create and remove their own test assets in the configured database.
+
+For verified backups, install PostgreSQL 17 client tools and add them to `PATH`:
+
+```bash
 gis-backup backup backups/first.dump
 gis-backup restore backups/first.dump --target gis_restore_first
 ```
 
-The recovery exercise checks a new database against a manifest from the same snapshot as the dump. Performance runs save real execution plans and timings under `artifacts/`; no speedup is assumed. GitHub Actions runs isolated database tests.
+Keep each archive with its `.dump.json` manifest. Recovery creates a new database and verifies its row fingerprints and migration checksums against the backup snapshot. The target must be a new name beginning with `gis_restore_`.
 
-All sample coordinates describe an invented training grid in the South Pacific. No operational information, real unit movements, or sensitive coordinates are used. This is a local educational system; [architecture limitations](docs/architecture.md) describe its boundaries.
+## Repository layout
+
+| Path | Purpose |
+| --- | --- |
+| `src/gis_dba/` | API, XML validation, simulator, administration, and recovery |
+| `sql/migrations/`, `sql/rollback/` | Versioned schema changes and rollback |
+| `sql/monitor.sql`, `sql/spatial_queries.sql` | Monitoring and spatial query examples |
+| `scripts/` | Native cluster tools, GIS export, benchmarks, and migration rehearsal |
+| `tests/` | XML, API, and PostGIS integration tests |
+| `docs/` | [Setup](docs/setup.md), [architecture](docs/architecture.md), and [GIS integration](docs/gis.md) |
+
+## Configuration and scope
+
+Credentials, database files, backups, generated reports, GIS connection projects, and personal working files are excluded from Git and Docker build contexts. Keep secrets in `.env` or environment variables; use `.env.example` as the public configuration reference. Review generated exports before sharing them.
+
+This is a local demonstration with loopback-bound services. Production deployment requires additional authentication, TLS, availability, and recovery controls; see the [architecture and limitations](docs/architecture.md). Logical backups recover the captured snapshot; point-in-time recovery is not configured.
