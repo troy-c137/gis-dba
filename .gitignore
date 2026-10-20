@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 *.log
 *.sql.gz
+/sql/practice-workbook.sql
 backups/
 .DS_Store
 .pytest_cache/
